@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0B1030">
+<title>Auto Viral · você dorme, seu perfil posta e vende</title>
+<meta name="description" content="O Auto Viral transforma o seu Claude numa equipe de conteúdo: garimpa os virais do seu nicho, narra com a sua voz clonada, monta Reacts, Reels e carrosséis e agenda nas suas redes, puxando cada post para a sua oferta. R$ 47, uma vez.">
+<meta property="og:title" content="Auto Viral · você dorme, seu perfil posta e vende">
+<meta property="og:description" content="Reacts, Reels e carrosséis com a sua voz clonada, publicados no automático e ligados à sua oferta. R$ 47, uma vez.">
+<meta property="og:image" content="assets/demo-reel.jpg">
+<link rel="preload" href="assets/fonts/bricolagegrotesque.woff2" as="font" type="font/woff2" crossorigin>
+<style>
+  @font-face { font-family: "Bricolage"; src: url("assets/fonts/bricolagegrotesque.woff2") format("woff2"); font-weight: 300 800; font-display: swap; }
+  @font-face { font-family: "Onest"; src: url("assets/fonts/onest.woff2") format("woff2"); font-weight: 400 700; font-display: swap; }
+
+  :root {
+    /* céu: o JS mistura estas paradas conforme a rolagem (madrugada → amanhecer) */
+    --ceu-1: #0B1030; --ceu-2: #1A1650;
+    --tinta: #F4F2FF; --tinta-2: #C9C4EC; --tinta-3: #9E98C8;
+    --vidro: rgba(12, 13, 40, .56); --vidro-forte: rgba(10, 10, 32, .74); --fio: rgba(255, 255, 255, .13);
+    --sol: #FFD34D; --sol-tinta: #1C1400; --sol-forte: #FFC21A;
+    --venda: #35D08A; --aviso: #FF8A6B;
+    --raio: 18px; --raio-p: 12px;
+    --display: "Bricolage", "Onest", sans-serif; --texto: "Onest", system-ui, sans-serif;
+    --largura: 1120px;
+    --ritmo: clamp(72px, 10vw, 128px);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; scrollbar-color: #4B3F8F transparent; }
+  body { font-family: var(--texto); color: var(--tinta); background: #0B1030; line-height: 1.55; font-size: 17px;
+    -webkit-font-smoothing: antialiased; min-height: 100vh; }
+  ::selection { background: var(--sol); color: var(--sol-tinta); }
+  ::-webkit-scrollbar { width: 10px; } ::-webkit-scrollbar-thumb { background: #4B3F8F; border-radius: 10px; }
+  a { color: inherit; text-underline-offset: 3px; }
+  :focus-visible { outline: 3px solid var(--sol); outline-offset: 3px; border-radius: 8px; }
+  svg.i { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+
+  .ceu { position: fixed; inset: 0; z-index: -2; background: linear-gradient(180deg, var(--ceu-1), var(--ceu-2)); }
+  .estrelas { position: fixed; inset: 0; z-index: -1; pointer-events: none; opacity: var(--estrelas, 1);
+    background-image: radial-gradient(2px 2px at 12% 18%, rgba(255,255,255,.95), transparent 100%), radial-gradient(1.6px 1.6px at 72% 9%, rgba(255,255,255,.95), transparent 100%),
+      radial-gradient(2.2px 2.2px at 38% 32%, rgba(255,255,255,.95), transparent 100%), radial-gradient(1.6px 1.6px at 86% 41%, rgba(255,255,255,.95), transparent 100%),
+      radial-gradient(1.6px 1.6px at 57% 63%, rgba(255,255,255,.95), transparent 100%), radial-gradient(2px 2px at 22% 77%, rgba(255,255,255,.95), transparent 100%),
+      radial-gradient(1.6px 1.6px at 93% 82%, rgba(255,255,255,.95), transparent 100%), radial-gradient(1.6px 1.6px at 5% 52%, rgba(255,255,255,.95), transparent 100%);
+    opacity: calc(var(--estrelas, 1) * .7); }
+
+  .miolo { max-width: var(--largura); margin: 0 auto; padding: 0 20px; }
+
+  /* barra de status: a navegação da página */
+  .status { position: sticky; top: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 10px max(20px, env(safe-area-inset-left)); background: rgba(11, 16, 48, .62); backdrop-filter: blur(16px) saturate(140%);
+    -webkit-backdrop-filter: blur(16px) saturate(140%); border-bottom: 1px solid var(--fio); }
+  .marca { display: flex; align-items: center; gap: 9px; font-family: var(--display); font-weight: 700; font-size: 17px; letter-spacing: -.01em; text-decoration: none; }
+  .marca .logo { width: 26px; height: 26px; border-radius: 8px; background: var(--sol); color: var(--sol-tinta); display: grid; place-items: center; }
+  .marca .logo svg { width: 16px; height: 16px; stroke-width: 2.2; }
+  .status .hora { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; color: var(--tinta-2); }
+  .pilula { display: inline-flex; align-items: center; gap: 8px; background: var(--sol); color: var(--sol-tinta); text-decoration: none;
+    font-weight: 700; font-size: 14px; padding: 8px 14px; border-radius: 999px; transition: background .2s, transform .2s; }
+  .pilula:hover { background: var(--sol-forte); }
+  .pilula:active { transform: scale(.97); }
+
+  /* ===== tela de bloqueio ===== */
+  .bloqueio { min-height: calc(100svh - 49px); display: grid; grid-template-columns: 1fr minmax(380px, 440px); gap: clamp(32px, 6vw, 88px);
+    align-items: center; padding-top: 36px; padding-bottom: 56px; }
+  .celular-tela { border-radius: 52px; border: 1px solid var(--fio); padding: 30px 20px 16px; text-align: center;
+    background: rgba(6, 8, 30, .32); box-shadow: inset 0 0 0 7px rgba(255, 255, 255, .035); }
+  .celular-tela .pilha { text-align: left; }
+  .data { font-weight: 600; font-size: 17px; color: var(--tinta-2); }
+  .relogio { font-family: var(--display); font-weight: 300; font-size: clamp(88px, 8vw, 116px); line-height: .9;
+    letter-spacing: -.035em; font-variant-numeric: tabular-nums; margin: 4px 0 14px; font-variation-settings: "opsz" 96; }
+  .barra-casa { display: block; width: 128px; height: 5px; border-radius: 3px; background: rgba(255, 255, 255, .55); margin: 16px auto 0; }
+  .pilha .notif:nth-child(n+5) { display: none; }
+  .mais-notif { text-align: center; font-size: 12.5px; color: var(--tinta-3); margin-top: 2px; }
+  .mais-notif .m { display: none; }
+  h1 { font-family: var(--display); font-weight: 700; font-size: clamp(32px, 4.4vw, 54px); line-height: 1.04; letter-spacing: -.03em;
+    max-width: 15ch; text-wrap: balance; font-variation-settings: "opsz" 96; }
+  h1 em, h2 em { font-style: normal; color: var(--sol); }
+  .sub { color: var(--tinta-2); font-size: clamp(16px, 1.6vw, 19px); max-width: 46ch; margin-top: 18px; }
+  .acao { margin-top: 30px; max-width: 420px; }
+  .botao { display: flex; align-items: center; justify-content: space-between; gap: 16px; width: 100%; background: var(--sol); color: var(--sol-tinta);
+    text-decoration: none; font-weight: 700; font-size: 18px; padding: 8px 8px 8px 24px; border-radius: 999px;
+    box-shadow: 0 16px 30px -14px rgba(3, 4, 18, .7); transition: background .2s, transform .25s cubic-bezier(.2, .8, .2, 1); }
+  .botao:hover { background: var(--sol-forte); transform: translateY(-2px); }
+  .botao:active { transform: translateY(0) scale(.98); }
+  .botao .preco { display: grid; place-items: center; background: var(--sol-tinta); color: var(--sol); border-radius: 999px; padding: 12px 18px;
+    font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .acao .letras { display: flex; flex-wrap: wrap; gap: 6px 16px; margin-top: 14px; font-size: 13.5px; color: var(--tinta-2); }
+  .acao .letras span { display: inline-flex; align-items: center; gap: 6px; }
+  .acao .letras svg { width: 16px; height: 16px; color: var(--venda); }
+  .aviso-topo { font-size: 13.5px; color: var(--tinta-3); margin-top: 16px; max-width: 46ch; }
+
+  /* notificações */
+  .pilha { display: grid; gap: 10px; }
+  .notif { display: grid; grid-template-columns: 38px 1fr; gap: 12px; align-items: start; padding: 13px 14px; border-radius: var(--raio);
+    background: var(--vidro); border: 1px solid var(--fio); backdrop-filter: blur(20px) saturate(150%); -webkit-backdrop-filter: blur(20px) saturate(150%); }
+  .notif .app { width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center; color: #fff; }
+  .notif .topo { display: flex; justify-content: space-between; gap: 10px; font-size: 13px; color: var(--tinta-3); }
+  .notif .topo b { font-weight: 600; color: var(--tinta-2); letter-spacing: .01em; }
+  .notif .tit { font-weight: 700; font-size: 15.5px; line-height: 1.3; margin-top: 1px; }
+  .notif .txt { font-size: 14.5px; color: var(--tinta-2); line-height: 1.4; }
+  .notif.venda { background: rgba(9, 40, 30, .62); border-color: rgba(53, 208, 138, .38); }
+  .notif.venda .tit { color: #8FF0C0; }
+  .app.av { background: var(--sol); color: var(--sol-tinta); } .app.ig { background: #C2367E; } .app.tk { background: #15151F; border: 1px solid #333; }
+  .app.kw { background: #13A86B; } .app.dm { background: #3B6BFF; }
+  .rotulo-demo { font-size: 12.5px; color: var(--tinta-2); text-align: center; margin-bottom: 12px; }
+  @media (prefers-reduced-motion: no-preference) {
+    .pilha .notif { animation: cai .7s cubic-bezier(.16, 1, .3, 1) both; }
+    .pilha .notif:nth-child(6) { animation-delay: .15s; } .pilha .notif:nth-child(5) { animation-delay: .5s; }
+    .pilha .notif:nth-child(4) { animation-delay: .85s; } .pilha .notif:nth-child(3) { animation-delay: 1.2s; }
+    .pilha .notif:nth-child(2) { animation-delay: 1.55s; } .pilha .notif:nth-child(1) { animation-delay: 1.9s; }
+    @keyframes cai { from { opacity: 0; transform: translateY(-14px) scale(.97); filter: blur(4px); } to { opacity: 1; transform: none; filter: none; } }
+  }
+
+  /* ===== seções ===== */
+  section { padding: var(--ritmo) 0 0; }
+  h2 { font-family: var(--display); font-weight: 700; font-size: clamp(30px, 4.2vw, 50px); line-height: 1.06; letter-spacing: -.028em;
+    max-width: 20ch; text-wrap: balance; margin-bottom: 18px; font-variation-settings: "opsz" 96; }
+  .lead { color: var(--tinta-2); font-size: clamp(16px, 1.7vw, 19px); max-width: 58ch; }
+  .vidro { background: var(--vidro); border: 1px solid var(--fio); border-radius: var(--raio);
+    backdrop-filter: blur(20px) saturate(140%); -webkit-backdrop-filter: blur(20px) saturate(140%); }
+
+  /* a noite, hora por hora */
+  .noite { display: grid; grid-template-columns: 340px 1fr; gap: clamp(28px, 6vw, 88px); margin-top: 40px; }
+  .noite .fixo { position: sticky; top: 90px; align-self: start; }
+  .noite .hora-grande { font-family: var(--display); font-weight: 300; font-size: clamp(76px, 9vw, 120px); line-height: .9;
+    letter-spacing: -.035em; font-variant-numeric: tabular-nums; font-variation-settings: "opsz" 96; }
+  .noite .fixo p { color: var(--tinta-3); font-size: 14px; margin-top: 10px; }
+  .linha { list-style: none; position: relative; }
+  .linha::before { content: ""; position: absolute; left: 19px; top: 8px; bottom: 8px; width: 2px; background: linear-gradient(var(--fio), rgba(255,211,77,.5), var(--fio)); }
+  .linha li { position: relative; display: grid; grid-template-columns: 40px 1fr; gap: 18px; padding: 0 0 42px; }
+  .linha .ponto { width: 40px; height: 40px; border-radius: 50%; background: var(--vidro-forte); border: 1px solid var(--fio); display: grid; place-items: center; color: var(--sol); }
+  .linha time { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--sol); font-size: 14px; letter-spacing: .02em; }
+  .linha h3 { font-family: var(--display); font-weight: 650; font-size: clamp(21px, 2.2vw, 26px); letter-spacing: -.02em; line-height: 1.15; margin: 2px 0 6px; }
+  .linha p { color: var(--tinta-2); max-width: 54ch; }
+
+  /* prova real */
+  .real { display: grid; grid-template-columns: .8fr 1.2fr; gap: clamp(32px, 6vw, 80px); align-items: center; margin-top: 8px; }
+  .aparelho { position: relative; width: min(320px, 78vw); margin: 0 auto; aspect-ratio: 9/16; border-radius: 40px; padding: 9px; background: #07081A;
+    box-shadow: 0 30px 70px -20px rgba(0, 0, 0, .7), inset 0 0 0 1px rgba(255,255,255,.08); }
+  .aparelho video { width: 100%; height: 100%; object-fit: cover; border-radius: 32px; display: block; background: #000; }
+  .selo-real { position: absolute; top: 12px; left: 50%; transform: translateX(-50%); white-space: nowrap; background: rgba(9, 40, 30, .85); color: #8FF0C0;
+    border: 1px solid rgba(53,208,138,.45); font-weight: 700; font-size: 12.5px; padding: 6px 12px; border-radius: 999px; }
+  .play { position: absolute; left: 50%; bottom: 26px; transform: translateX(-50%); display: inline-flex; align-items: center; gap: 10px; white-space: nowrap;
+    background: var(--sol); color: var(--sol-tinta); border: 0; font: 700 15px var(--texto); padding: 6px 18px 6px 6px; border-radius: 999px; cursor: pointer;
+    box-shadow: 0 12px 24px -10px rgba(0, 0, 0, .7); transition: background .2s, transform .25s cubic-bezier(.2,.8,.2,1); }
+  .play:hover { background: var(--sol-forte); transform: translateX(-50%) translateY(-2px); }
+  .play .disco { width: 36px; height: 36px; border-radius: 50%; background: var(--sol-tinta); color: var(--sol); display: grid; place-items: center; }
+  .play .disco svg { width: 16px; height: 16px; fill: currentColor; }
+  .tocando .selo-real, .tocando .play { display: none; }
+  .fatos { list-style: none; margin-top: 26px; display: grid; gap: 12px; }
+  .fatos li { display: flex; gap: 12px; align-items: flex-start; color: var(--tinta-2); }
+  .fatos svg { color: var(--sol); margin-top: 2px; }
+
+  /* semana no ar */
+  .semana { margin-top: 40px; display: grid; grid-template-columns: repeat(7, 1fr); gap: 12px; }
+  .dia { text-align: left; }
+  .dia img { width: 100%; aspect-ratio: 9/16; object-fit: cover; border-radius: 14px; display: block; border: 1px solid var(--fio); }
+  .dia .quando { display: flex; justify-content: space-between; align-items: center; margin-top: 9px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .dia .quando b { text-transform: uppercase; letter-spacing: .06em; font-size: 12px; }
+  .dia .ok { display: inline-flex; align-items: center; gap: 4px; color: #8FF0C0; font-weight: 600; }
+  .dia .ok svg { width: 14px; height: 14px; }
+  .nota { font-size: 13px; color: var(--tinta-3); margin-top: 16px; }
+
+  /* central de controle */
+  .controles { margin-top: 40px; display: grid; grid-template-columns: 1fr 1fr; gap: 0 28px; padding: 8px 24px; }
+  .controle { display: grid; grid-template-columns: 42px 1fr auto; gap: 14px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--fio); }
+  .controle:nth-last-child(-n+2) { border-bottom: 0; }
+  .controle .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; background: rgba(255,255,255,.08); color: var(--sol); }
+  .controle h3 { font-weight: 700; font-size: 16.5px; line-height: 1.25; }
+  .controle p { color: var(--tinta-2); font-size: 14.5px; line-height: 1.4; margin-top: 2px; }
+  .chave { width: 46px; height: 28px; border-radius: 999px; background: var(--venda); position: relative; flex: none; }
+  .chave::after { content: ""; position: absolute; right: 3px; top: 3px; width: 22px; height: 22px; border-radius: 50%; background: #fff; box-shadow: 0 2px 4px rgba(0,0,0,.25); }
+  .gratis { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: .06em; color: var(--sol-tinta); background: var(--sol); border-radius: 6px; padding: 1px 6px; margin-left: 6px; vertical-align: 2px; }
+
+  /* comparativo */
+  .tabela { margin-top: 36px; overflow-x: auto; padding: 6px 4px; }
+  table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 640px; }
+  th, td { text-align: left; padding: 15px 16px; border-bottom: 1px solid var(--fio); vertical-align: top; }
+  th { color: var(--tinta-3); font-weight: 600; font-size: 13px; }
+  td:first-child { font-weight: 600; }
+  .sim { color: #8FF0C0; font-weight: 600; } .nao { color: var(--tinta-3); }
+  tr.nos td { background: rgba(255, 211, 77, .1); }
+  tr.nos td:first-child { color: var(--sol); }
+
+  /* tempo de tela */
+  .tempo { margin-top: 36px; padding: 28px; display: grid; grid-template-columns: 1fr auto; gap: 28px; align-items: end; max-width: 820px; }
+  .tempo label { font-weight: 600; display: block; margin-bottom: 16px; }
+  .tempo input { width: 100%; accent-color: var(--sol); height: 28px; }
+  .tempo .res { font-family: var(--display); font-weight: 300; font-size: clamp(56px, 7vw, 84px); line-height: .9; letter-spacing: -.03em; font-variant-numeric: tabular-nums; text-align: right; }
+  .tempo .res small { display: block; font-family: var(--texto); font-weight: 500; font-size: 14px; letter-spacing: 0; color: var(--tinta-2); margin-top: 8px; }
+
+  /* para quem */
+  .quem { margin-top: 36px; display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  .quem > div { padding: 26px; }
+  .quem h3 { font-family: var(--display); font-weight: 650; font-size: 22px; letter-spacing: -.02em; margin-bottom: 10px; }
+  .quem ul { list-style: none; }
+  .quem li { display: flex; gap: 12px; padding: 11px 0; color: var(--tinta-2); border-bottom: 1px solid var(--fio); }
+  .quem li:last-child { border: 0; }
+  .quem .s svg { color: var(--venda); } .quem .n svg { color: var(--aviso); }
+  .quem svg { margin-top: 2px; }
+
+  .autor { display: grid; grid-template-columns: 128px 1fr; gap: 28px; align-items: start; margin-top: 44px; max-width: 780px; padding: 28px; }
+  .autor .foto { position: relative; width: 128px; height: 128px; border-radius: 50%; background: var(--sol); color: var(--sol-tinta); display: grid; place-items: center;
+    font-family: var(--display); font-weight: 700; font-size: 40px; overflow: hidden; box-shadow: 0 0 0 4px rgba(255, 211, 77, .9), 0 18px 36px -16px rgba(0, 0, 0, .7); }
+  .autor .foto img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; object-position: 50% 20%; }
+  .autor .nome { font-family: var(--display); font-weight: 700; font-size: 26px; letter-spacing: -.02em; line-height: 1.1; color: var(--tinta); }
+  .autor .papel { font-size: 14px; color: var(--sol); font-weight: 600; margin: 4px 0 16px; }
+  .autor p { color: var(--tinta-2); margin-bottom: 12px; }
+  .autor .assina { color: var(--tinta); font-weight: 600; margin: 4px 0 0; }
+
+  /* avisos */
+  .avisos { margin-top: 32px; display: grid; gap: 10px; max-width: 760px; }
+
+  /* oferta */
+  .oferta { display: grid; grid-template-columns: 1.05fr .95fr; gap: clamp(28px, 6vw, 72px); align-items: center; }
+  .cartao { padding: 32px; background: var(--vidro-forte); }
+  .cartao .de { color: var(--tinta-3); text-decoration: line-through; font-variant-numeric: tabular-nums; }
+  .cartao .valor { font-family: var(--display); font-weight: 300; font-size: clamp(88px, 10vw, 128px); line-height: .9; letter-spacing: -.04em; font-variant-numeric: tabular-nums; }
+  .cartao .valor small { font-size: 34px; font-weight: 500; letter-spacing: 0; vertical-align: 1.6em; margin-right: 6px; }
+  .cartao .cond { color: var(--tinta-2); font-size: 14.5px; margin: 6px 0 22px; }
+  .cartao ul { list-style: none; margin: 0 0 26px; display: grid; gap: 10px; }
+  .cartao li { display: flex; gap: 10px; font-size: 15.5px; }
+  .cartao li svg { color: var(--venda); width: 20px; height: 20px; margin-top: 2px; }
+  .cartao .meios { font-size: 12.5px; color: var(--tinta-3); margin-top: 14px; text-align: center; letter-spacing: .04em; }
+  .garantia { display: grid; grid-template-columns: 64px 1fr; gap: 18px; align-items: center; margin-top: 30px; }
+  .garantia .escudo { width: 64px; height: 64px; border-radius: 18px; display: grid; place-items: center; background: rgba(53,208,138,.15); color: #8FF0C0; }
+  .garantia .escudo svg { width: 30px; height: 30px; }
+  .garantia p { color: var(--tinta-2); }
+  .garantia b { color: var(--tinta); }
+
+  /* faq */
+  .faq { margin-top: 32px; display: grid; gap: 10px; max-width: 820px; }
+  details { border-radius: var(--raio); background: var(--vidro); border: 1px solid var(--fio); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); }
+  summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; padding: 18px 20px; font-weight: 700; font-size: 16.5px; }
+  summary::-webkit-details-marker { display: none; }
+  summary svg { transition: transform .3s cubic-bezier(.2,.8,.2,1); color: var(--tinta-3); }
+  details[open] summary svg { transform: rotate(45deg); color: var(--sol); }
+  details p { padding: 0 20px 20px; color: var(--tinta-2); max-width: 66ch; }
+
+  .fecho { text-align: center; min-height: calc(100svh - 40px); display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 56px; }
+  .fecho .relogio { margin: 0 auto 10px; font-size: clamp(88px, 13vw, 160px); }
+  .fecho h2 { margin: 0 auto 26px; }
+  .fecho .acao { margin: 0 auto; }
+  .fecho .letras { justify-content: center; width: fit-content; margin: 14px auto 0; background: rgba(8, 7, 26, .78); padding: 8px 16px; border-radius: 999px; }
+
+  footer { border-top: 1px solid var(--fio); padding: 32px 0 40px; color: var(--tinta-2); font-size: 13px; background: rgba(8, 7, 26, .82); }
+  footer p { max-width: 82ch; margin: 0 auto 8px; text-align: center; }
+
+  /* barra de ação no celular (o "deslize para desbloquear") */
+  .barra-acao { position: fixed; left: 12px; right: 12px; bottom: max(12px, env(safe-area-inset-bottom)); z-index: 30; display: none;
+    transform: translateY(140%); transition: transform .45s cubic-bezier(.16, 1, .3, 1); }
+  .barra-acao.ver { transform: none; }
+  .barra-acao .botao { font-size: 16.5px; }
+
+  @media (max-width: 900px) {
+    body { font-size: 16px; }
+    /* no celular a tela de bloqueio segue a ordem de um iPhone e cabe numa tela: data, hora, manchete, 3 notificações, ação */
+    .bloqueio { display: flex; flex-direction: column; min-height: calc(100svh - 57px); padding-top: 14px; padding-bottom: 28px; gap: 0; text-align: center; }
+    .esq, .celular-tela { display: contents; }
+    .data { order: 1; font-size: 15px; } .relogio { order: 2; font-size: 27vw; margin: 0 0 10px; } h1 { order: 3; font-size: clamp(25px, 7vw, 30px); }
+    .rotulo-demo { order: 4; margin: 16px 0 8px; } .pilha { order: 5; text-align: left; gap: 8px; }
+    .pilha .notif:nth-child(n+4) { display: none; }
+    .mais-notif .d { display: none; } .mais-notif .m { display: inline; }
+    .acao { order: 6; margin: auto auto 0; width: 100%; padding-top: 16px; }
+    .sub { order: 7; margin-top: 30px; } .aviso-topo { order: 8; }
+    .barra-casa { display: none; }
+    h1, .sub, .aviso-topo { margin-left: auto; margin-right: auto; }
+    .acao .letras { justify-content: center; }
+    .noite, .real, .oferta, .quem { grid-template-columns: 1fr; }
+    .noite .fixo { position: sticky; top: 60px; z-index: 5; display: flex; align-items: center; gap: 16px; padding: 12px 18px !important;
+      background: var(--vidro-forte); }
+    .noite .fixo .hora-grande { font-size: 46px; }
+    .noite .fixo p { margin: 0; font-size: 13px; }
+    .semana { grid-template-columns: repeat(7, 42%); overflow-x: auto; scroll-snap-type: x mandatory; padding-bottom: 8px; margin-right: -20px; padding-right: 20px; }
+    .dia { scroll-snap-align: start; }
+    .controles { grid-template-columns: 1fr; padding: 4px 18px; }
+    .controle:nth-last-child(2) { border-bottom: 1px solid var(--fio); }
+    .tempo { grid-template-columns: 1fr; }
+    .tempo .res { text-align: left; }
+    .barra-acao { display: block; }
+    footer { padding-bottom: 104px; font-size: 12.5px; }
+    .fecho { min-height: calc(100svh - 120px); padding-bottom: 40px; }
+    .bloqueio .acao .letras span:nth-child(3) { display: none; }
+    .status .hora { display: none; }
+  }
+  @media (max-width: 420px) {
+    .botao { font-size: 16px; padding-left: 18px; }
+    .botao .preco { padding: 11px 14px; }
+    .autor { grid-template-columns: 1fr; }
+    .controle { grid-template-columns: 40px 1fr auto; gap: 12px; }
+  }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+<div class="ceu" aria-hidden="true"></div>
+<div class="estrelas" aria-hidden="true"></div>
+
+<!-- ícones desenhados (traço único 1.8) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-play" viewBox="0 0 24 24"><path d="M8 5.5v13l10.5-6.5z"/></symbol>
+  <symbol id="i-busca" viewBox="0 0 24 24"><circle cx="11" cy="11" r="6.5"/><path d="m20 20-4.2-4.2"/></symbol>
+  <symbol id="i-mic" viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5.5 11a6.5 6.5 0 0 0 13 0M12 17.5V21"/></symbol>
+  <symbol id="i-camadas" viewBox="0 0 24 24"><path d="m12 3 9 5-9 5-9-5z"/><path d="m3 13 9 5 9-5"/></symbol>
+  <symbol id="i-camera" viewBox="0 0 24 24"><rect x="3.5" y="3.5" width="17" height="17" rx="5"/><circle cx="12" cy="12" r="4"/><circle cx="17.2" cy="6.8" r=".6" fill="currentColor"/></symbol>
+  <symbol id="i-nota" viewBox="0 0 24 24"><path d="M14 4v10.5a3.5 3.5 0 1 1-2-3.2V4c1 2.2 3 3.5 5.5 3.5"/></symbol>
+  <symbol id="i-moeda" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M14.8 9.2c-.5-.9-1.6-1.4-2.8-1.4-1.6 0-2.8.8-2.8 2.1 0 3 5.8 1.5 5.8 4.3 0 1.3-1.2 2.1-3 2.1-1.3 0-2.4-.5-3-1.5M12 6v1.8M12 16.3V18"/></symbol>
+  <symbol id="i-balao" viewBox="0 0 24 24"><path d="M5 18.5V7a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H8.5z"/></symbol>
+  <symbol id="i-calendario" viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15.5" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-grafico" viewBox="0 0 24 24"><path d="M4 20V4M4 20h16M8 16l4-5 3 3 5-6"/></symbol>
+  <symbol id="i-musica" viewBox="0 0 24 24"><path d="M9 18V6l11-2v12"/><circle cx="6.5" cy="18" r="2.5"/><circle cx="17.5" cy="16" r="2.5"/></symbol>
+  <symbol id="i-link" viewBox="0 0 24 24"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1"/><path d="M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1"/></symbol>
+  <symbol id="i-escudo" viewBox="0 0 24 24"><path d="M12 3 5 6v5.5c0 4.4 3 8 7 9.5 4-1.5 7-5.1 7-9.5V6z"/><path d="m9 12 2.2 2.2L15.5 10"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12.5 4.5 4.5L19 7.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></symbol>
+  <symbol id="i-mais" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-relogio" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></symbol>
+  <symbol id="i-aviso" viewBox="0 0 24 24"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5v5.5M12 16.4v.1"/></symbol>
+  <symbol id="i-pc" viewBox="0 0 24 24"><rect x="3" y="4.5" width="18" height="12" rx="2"/><path d="M8 20h8M12 16.5V20"/></symbol>
+  <symbol id="i-volume" viewBox="0 0 24 24"><path d="M4 9.5v5h3.5L12 18V6L7.5 9.5z"/><path d="M15.5 9a4 4 0 0 1 0 6M18 6.5a7.5 7.5 0 0 1 0 11"/></symbol>
+</svg>
+
+<header class="status">
+  <a class="marca" href="#topo"><span class="logo"><svg class="i"><use href="#i-play"/></svg></span>Auto Viral</a>
+  <span class="hora" id="hora-status">07:41</span>
+  <a class="pilula comprar" href="#oferta">Comprar · R$ 47</a>
+</header>
+
+<main id="topo">
+  <!-- tela de bloqueio -->
+  <div class="miolo bloqueio">
+    <div class="esq">
+      <h1>Você dormiu. Seu perfil <em>postou, respondeu e vendeu.</em></h1>
+      <p class="sub">O Auto Viral transforma o seu Claude numa equipe de conteúdo: garimpa os virais do seu nicho, narra com a sua voz clonada,
+        monta Reacts, Reels e carrosséis e agenda nas suas redes. Cada post leva para a sua oferta.</p>
+      <div class="acao">
+        <a class="botao comprar" href="#oferta">Quero o Auto Viral <span class="preco">R$ 47</span></a>
+        <div class="letras">
+          <span><svg class="i"><use href="#i-check"/></svg>pagamento único</span>
+          <span><svg class="i"><use href="#i-check"/></svg>garantia de 7 dias</span>
+          <span><svg class="i"><use href="#i-check"/></svg>acesso na hora</span>
+        </div>
+      </div>
+      <p class="aviso-topo">Roda no seu Claude (plano Pro, cerca de US$ 20/mês, à parte) num computador. <a href="#antes">Veja o que precisa</a>.</p>
+    </div>
+
+    <div class="celular-tela">
+      <p class="data">sábado, 1 de novembro</p>
+      <p class="relogio" aria-hidden="true">07:41</p>
+      <p class="rotulo-demo">Simulação ilustrativa de uma madrugada com o piloto ligado</p>
+      <div class="pilha" aria-label="Exemplo de notificações de uma madrugada com o Auto Viral">
+        <div class="notif venda"><span class="app kw"><svg class="i"><use href="#i-moeda"/></svg></span><div>
+          <div class="topo"><b>KIWIFY</b><span>07:38</span></div><div class="tit">Venda aprovada!</div>
+          <div class="txt">Sua comissão: R$ 48,50 · Curso de bolos caseiros</div></div></div>
+        <div class="notif"><span class="app dm"><svg class="i"><use href="#i-balao"/></svg></span><div>
+          <div class="topo"><b>DIRECT</b><span>07:12</span></div><div class="tit">@ana.doceria comentou QUERO</div>
+          <div class="txt">O link da sua oferta foi enviado no direct.</div></div></div>
+        <div class="notif"><span class="app ig"><svg class="i"><use href="#i-camera"/></svg></span><div>
+          <div class="topo"><b>INSTAGRAM</b><span>06:30</span></div><div class="tit">Seu Reel foi publicado</div>
+          <div class="txt">“O bolo que vende sozinho na padaria” · narrado com a sua voz</div></div></div>
+        <div class="notif"><span class="app av"><svg class="i"><use href="#i-camadas"/></svg></span><div>
+          <div class="topo"><b>AUTO VIRAL</b><span>06:00</span></div><div class="tit">Carrossel do dia pronto</div>
+          <div class="txt">7 slides com a sua oferta no final · agendado para 12:30</div></div></div>
+        <div class="notif"><span class="app av"><svg class="i"><use href="#i-mic"/></svg></span><div>
+          <div class="topo"><b>AUTO VIRAL</b><span>03:14</span></div><div class="tit">React montado com a sua voz</div>
+          <div class="txt">O viral da noite atrás, você no canto, crédito ao criador.</div></div></div>
+        <div class="notif"><span class="app av"><svg class="i"><use href="#i-busca"/></svg></span><div>
+          <div class="topo"><b>AUTO VIRAL</b><span>03:00</span></div><div class="tit">Garimpei os virais do seu nicho</div>
+          <div class="txt">48 vídeos lidos. 1 escolhido: subindo rápido e com cara de você.</div></div></div>
+        <p class="mais-notif"><span class="d">+2 notificações da madrugada</span><span class="m">+3 notificações da madrugada</span></p>
+      </div>
+      <span class="barra-casa" aria-hidden="true"></span>
+    </div>
+  </div>
+
+  <!-- a noite, hora por hora -->
+  <section id="como">
+    <div class="miolo">
+      <h2>O que acontece enquanto você dorme.</h2>
+      <p class="lead">Você instala uma vez e conta para ele quem você é, como você fala e o que você vende. Daí em diante, a noite trabalha assim:</p>
+      <div class="noite">
+        <div class="fixo vidro" style="padding:26px">
+          <div class="hora-grande" id="hora-noite">03:00</div>
+          <p>O relógio acompanha a sua leitura. Os horários são de exemplo: no seu, você escolhe.</p>
+        </div>
+        <ol class="linha">
+          <li data-hora="03:00"><span class="ponto"><svg class="i"><use href="#i-busca"/></svg></span><div>
+            <time>03:00</time><h3>Garimpa o que está viralizando</h3>
+            <p>Lê os vídeos do seu nicho no TikTok e nos Shorts, mede curtidas, compartilhamentos e idade, e fica com o que está subindo rápido.</p></div></li>
+          <li data-hora="03:14"><span class="ponto"><svg class="i"><use href="#i-mic"/></svg></span><div>
+            <time>03:14</time><h3>Escreve no seu tom e narra com a sua voz</h3>
+            <p>Roteiro com gancho nos 3 primeiros segundos, narrado com a sua voz clonada a partir de 15 segundos de gravação. Corta as pausas e deixa o som de estúdio.</p></div></li>
+          <li data-hora="04:20"><span class="ponto"><svg class="i"><use href="#i-play"/></svg></span><div>
+            <time>04:20</time><h3>Monta o vídeo inteiro</h3>
+            <p>React com o viral atrás e você no canto, ou Reel em motion na sua identidade: legenda palavra por palavra, trilha própria e crédito ao criador.</p></div></li>
+          <li data-hora="06:00"><span class="ponto"><svg class="i"><use href="#i-escudo"/></svg></span><div>
+            <time>06:00</time><h3>Revisa antes de sair</h3>
+            <p>Confere gancho, legenda, direitos e a chamada para a sua oferta. Nas duas primeiras semanas, ele espera o seu "aprova".</p></div></li>
+          <li data-hora="06:30"><span class="ponto"><svg class="i"><use href="#i-calendario"/></svg></span><div>
+            <time>06:30</time><h3>Agenda nas suas redes</h3>
+            <p>Pelo seu próprio navegador, no Instagram, YouTube Shorts e TikTok, nos horários que você escolheu.</p></div></li>
+          <li data-hora="07:38"><span class="ponto"><svg class="i"><use href="#i-moeda"/></svg></span><div>
+            <time>07:38</time><h3>Leva para a venda e mede</h3>
+            <p>Cada post tem um pedido só e um link rastreado por rede. No domingo chega o relatório: o que alcançou e o que vendeu.</p></div></li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <!-- prova real -->
+  <section id="prova">
+    <div class="miolo real">
+      <div class="aparelho">
+        <video id="demo" src="assets/demo-reel.mp4" poster="assets/demo-reel.jpg" playsinline preload="metadata"></video>
+        <span class="selo-real">Feito pelo sistema · não é simulação</span>
+        <button class="play" id="play" type="button"><span class="disco"><svg class="i"><use href="#i-play"/></svg></span>Aperte o play com som</button>
+      </div>
+      <div>
+        <h2><em>Essa voz é a minha</em>, clonada pelo sistema.</h2>
+        <p class="lead">Este Reel saiu inteiro do Auto Viral. Ninguém gravou, editou nem legendou.</p>
+        <ul class="fatos">
+          <li><svg class="i"><use href="#i-check"/></svg>Roteiro escrito pelo Claude no meu tom</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Narração com a minha voz clonada de 15 segundos de gravação, de graça</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Legenda palavra por palavra, cenas animadas e trilha própria</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Pronto em cerca de 2 minutos num Mac com chip Apple</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- semana no ar -->
+  <section>
+    <div class="miolo">
+      <h2>Uma semana no ar. <em>Sete dias, sete Reels</em>, nenhum editado por você.</h2>
+      <p class="lead">Nutri, finanças, treino, doceria, pet, direito: você diz o nicho, as cores e o seu jeito de falar. O resto sai pronto, todo dia, no horário.</p>
+      <div class="semana">
+        <figure class="dia"><img src="assets/semana/seg.jpg" alt="Reel de nutrição: 5 trocas que desincham em 7 dias"><figcaption class="quando"><b>seg 08:45</b><span class="ok"><svg class="i"><use href="#i-check"/></svg>no ar</span></figcaption></figure>
+        <figure class="dia"><img src="assets/semana/ter.jpg" alt="Reel de finanças: onde deixar a sua reserva"><figcaption class="quando"><b>ter 08:45</b><span class="ok"><svg class="i"><use href="#i-check"/></svg>no ar</span></figcaption></figure>
+        <figure class="dia"><img src="assets/semana/qua.jpg" alt="Reel de treino: 20 minutos que queimam mais que esteira"><figcaption class="quando"><b>qua 08:45</b><span class="ok"><svg class="i"><use href="#i-check"/></svg>no ar</span></figcaption></figure>
+        <figure class="dia"><img src="assets/semana/qui.jpg" alt="Reel: pare de perder 3 horas por dia"><figcaption class="quando"><b>qui 08:45</b><span class="ok"><svg class="i"><use href="#i-check"/></svg>no ar</span></figcaption></figure>
+        <figure class="dia"><img src="assets/semana/sex.jpg" alt="Reel de doceria: o bolo que vende sozinho"><figcaption class="quando"><b>sex 08:45</b><span class="ok"><svg class="i"><use href="#i-check"/></svg>no ar</span></figcaption></figure>
+        <figure class="dia"><img src="assets/semana/sab.jpg" alt="Reel pet: 3 erros na ração do seu cachorro"><figcaption class="quando"><b>sáb 08:45</b><span class="ok"><svg class="i"><use href="#i-check"/></svg>no ar</span></figcaption></figure>
+        <figure class="dia"><img src="assets/semana/dom.jpg" alt="Reel de direito: seu direito que ninguém te conta"><figcaption class="quando"><b>dom 08:45</b><span class="ok"><svg class="i"><use href="#i-check"/></svg>no ar</span></figcaption></figure>
+      </div>
+      <p class="nota">Capas geradas pelo Auto Viral para perfis de exemplo. Arraste para o lado no celular.</p>
+    </div>
+  </section>
+
+  <!-- central de controle -->
+  <section>
+    <div class="miolo">
+      <h2>Tudo isso liga no seu Claude.</h2>
+      <p class="lead">Onze skills que conversam entre si, do viral à venda, mais o compositor de trilha. Você liga, ajusta e deixa rodando.</p>
+      <div class="controles vidro">
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-play"/></svg></span><div><h3>React viral</h3><p>O viral atrás, você no canto, legenda e crédito.</p></div><span class="chave" aria-hidden="true"></span></div>
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-camadas"/></svg></span><div><h3>Reel em motion e carrossel</h3><p>Na sua cor e na sua fonte, sem você aparecer.</p></div><span class="chave" aria-hidden="true"></span></div>
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-mic"/></svg></span><div><h3>Sua voz clonada<span class="gratis">GRÁTIS</span></h3><p>Roda no seu computador, sem mensalidade de voz.</p></div><span class="chave" aria-hidden="true"></span></div>
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-link"/></svg></span><div><h3>Oferta e links rastreados</h3><p>Produto seu ou de afiliado, um link por rede.</p></div><span class="chave" aria-hidden="true"></span></div>
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-calendario"/></svg></span><div><h3>Piloto automático</h3><p>Produz de madrugada e agenda nos seus horários.</p></div><span class="chave" aria-hidden="true"></span></div>
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-grafico"/></svg></span><div><h3>Relatório de vendas</h3><p>Toda semana: o que alcançou e o que vendeu.</p></div><span class="chave" aria-hidden="true"></span></div>
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-musica"/></svg></span><div><h3>Trilha própria</h3><p>Música gerada por código, sem direito autoral.</p></div><span class="chave" aria-hidden="true"></span></div>
+        <div class="controle"><span class="ic"><svg class="i"><use href="#i-escudo"/></svg></span><div><h3>Revisão antes de postar</h3><p>Confere gancho, legenda, direitos e a chamada.</p></div><span class="chave" aria-hidden="true"></span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- objeção -->
+  <section>
+    <div class="miolo">
+      <h2>"Dá pra fazer com o ChatGPT." Dá para escrever o roteiro. <em>O vídeo pronto, com a sua voz e no ar</em>, não.</h2>
+      <p class="lead">Um chat te devolve texto. Você ainda grava, edita, legenda, posta e torce para vender.</p>
+      <div class="tabela vidro"><table>
+        <tr><th></th><th>Vídeo pronto</th><th>Sua voz</th><th>Funil e vendas</th><th>Posta sozinho</th><th>Mensalidade</th></tr>
+        <tr><td>Chat de IA + edição na mão</td><td class="nao">não</td><td class="nao">você grava</td><td class="nao">não</td><td class="nao">não</td><td>a do chat</td></tr>
+        <tr><td>Editor de vídeo freelancer</td><td class="sim">sim</td><td class="nao">você grava</td><td class="nao">não</td><td class="nao">não</td><td>por vídeo</td></tr>
+        <tr><td>Apps de voz e avatar de IA</td><td>às vezes</td><td class="sim">sim</td><td class="nao">não</td><td class="nao">não</td><td>todo mês</td></tr>
+        <tr class="nos"><td>Auto Viral</td><td class="sim">React, Reel e carrossel</td><td class="sim">clonada, grátis</td><td class="sim">sim</td><td class="sim">nos seus horários</td><td class="sim">nenhuma (só o seu Claude)</td></tr>
+      </table></div>
+    </div>
+  </section>
+
+  <!-- tempo de tela -->
+  <section>
+    <div class="miolo">
+      <h2>Quanto do seu sono a edição já comeu?</h2>
+      <div class="tempo vidro">
+        <div>
+          <label for="horas">Horas por semana gravando, editando e postando: <b id="hv">4 h</b></label>
+          <input id="horas" type="range" min="1" max="20" value="4">
+          <p class="lead" style="margin-top:14px;font-size:15px">O Auto Viral custa R$ 47, uma vez. A voz clonada não tem mensalidade.</p>
+        </div>
+        <p class="res"><span id="ano">208</span> h<small>por ano · <span id="dias">26</span> dias de 8 horas</small></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- para quem -->
+  <section>
+    <div class="miolo">
+      <h2>Para quem quer o vídeo no ar e a venda no caixa.</h2>
+      <div class="quem">
+        <div class="vidro s"><h3>É para você se</h3><ul>
+          <li><svg class="i"><use href="#i-check"/></svg>Vende um produto seu ou quer vender como afiliado</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Está começando um perfil e quer constância sem saber editar</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Prefere não aparecer, ou quer aparecer sem gravar todo dia</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Quer que cada post leve para algum lugar, não só dê like</li>
+        </ul></div>
+        <div class="vidro n"><h3>Não é para você se</h3><ul>
+          <li><svg class="i"><use href="#i-x"/></svg>Procura renda garantida ou atalho mágico</li>
+          <li><svg class="i"><use href="#i-x"/></svg>Quer repostar vídeo dos outros sem comentar nem dar crédito</li>
+          <li><svg class="i"><use href="#i-x"/></svg>Não quer assinar o Claude Pro, onde o sistema roda</li>
+          <li><svg class="i"><use href="#i-x"/></svg>Não tem um computador que fique ligado nos horários</li>
+        </ul></div>
+      </div>
+      <div class="autor vidro">
+        <div class="foto">D<img src="assets/dayvth.png" alt="Foto de Dayvth Costa, criador do Auto Viral" onerror="this.remove()"></div>
+        <div>
+          <p class="nome">Oi, eu sou o Dayvth Costa.</p>
+          <p class="papel">Web &amp; AI Designer · criador do Auto Viral</p>
+          <p>Há mais de 10 anos trabalho com tecnologia e já entreguei mais de 40 projetos no Brasil, Reino Unido e Estados Unidos. Criei o Auto Viral para quem cria conteúdo parar de perder noites editando: ele escreve, narra com a sua voz e posta por você, sempre puxando para a sua venda.</p>
+          <p class="assina">Te vejo do outro lado. Dayvth</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- antes de comprar -->
+  <section id="antes">
+    <div class="miolo">
+      <h2>Leia isto antes de comprar.</h2>
+      <p class="lead">O Auto Viral custa R$ 47 uma vez, mas roda no seu Claude e é instalado no seu computador. Se isso não for para você agora, melhor não comprar.</p>
+      <div class="avisos">
+        <div class="notif"><span class="app av"><svg class="i"><use href="#i-aviso"/></svg></span><div><div class="tit">O Claude Pro é pago à parte</div><div class="txt">Cerca de US$ 20 por mês, direto com a Anthropic. É obrigatório e não é vendido por nós.</div></div></div>
+        <div class="notif"><span class="app av"><svg class="i"><use href="#i-pc"/></svg></span><div><div class="tit">Precisa de um computador</div><div class="txt">Mac com chip Apple (recomendado) ou Windows (beta), com o Chrome. Não roda pelo celular.</div></div></div>
+        <div class="notif"><span class="app av"><svg class="i"><use href="#i-relogio"/></svg></span><div><div class="tit">Reserve uma tarde para começar</div><div class="txt">De 1 a 3 horas no primeiro dia: instalar, gravar a sua voz e fazer os primeiros vídeos.</div></div></div>
+        <div class="notif"><span class="app av"><svg class="i"><use href="#i-balao"/></svg></span><div><div class="tit">Não é curso em vídeo</div><div class="txt">Você recebe o sistema e um guia em PDF. Quem te guia é o próprio Claude, em português. Não precisa programar.</div></div></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- oferta -->
+  <section id="oferta">
+    <div class="miolo oferta">
+      <div>
+        <h2>Liga hoje. <em>Amanhã cedo</em> a sua tela pode estar assim.</h2>
+        <p class="lead">Lote fundador: o preço sobe depois das primeiras vendas.</p>
+        <div class="garantia">
+          <span class="escudo"><svg class="i"><use href="#i-escudo"/></svg></span>
+          <p><b>Garantia incondicional de 7 dias.</b> Instale, teste, faça seus primeiros vídeos. Não gostou, pede o reembolso pela própria Kiwify e recebe tudo de volta, sem explicar.</p>
+        </div>
+      </div>
+      <div class="cartao vidro">
+        <span class="de">de R$ 97</span>
+        <p class="valor"><small>R$</small>47</p>
+        <p class="cond">pagamento único · sem mensalidade do Auto Viral</p>
+        <ul>
+          <li><svg class="i"><use href="#i-check"/></svg>11 skills de ponta a ponta, do viral à venda</li>
+          <li><svg class="i"><use href="#i-check"/></svg>React viral, Reel em motion e carrossel</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Sua voz clonada grátis, com jump cut e som de estúdio</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Oferta, links rastreados e relatório de vendas</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Agenda no Instagram, Shorts e TikTok + piloto automático</li>
+          <li><svg class="i"><use href="#i-check"/></svg>Trilha própria, guia em PDF e atualizações da versão&nbsp;1</li>
+        </ul>
+        <a class="botao comprar" href="#">Quero o Auto Viral <span class="preco">R$ 47</span></a>
+        <p class="meios">PIX · CARTÃO · BOLETO · COMPRA SEGURA KIWIFY</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- perguntas -->
+  <section>
+    <div class="miolo">
+      <h2>O que todo mundo pergunta antes de comprar.</h2>
+      <div class="faq">
+        <details><summary>Preciso saber programar?<svg class="i"><use href="#i-mais"/></svg></summary><p>Não. Você conversa com o Claude em português. A instalação também é feita por ele: você só clica em "Permitir" quando ele pede.</p></details>
+        <details><summary>A voz clonada fica parecida mesmo? Tem custo?<svg class="i"><use href="#i-mais"/></svg></summary><p>Você grava de 15 a 20 segundos falando animado e ela narra tudo com o seu timbre, no seu computador, sem custo. Dá para ajustar velocidade, energia e a pronúncia de palavras. Se preferir voz na nuvem, funciona com o ElevenLabs (plano seu).</p></details>
+        <details><summary>Preciso aparecer?<svg class="i"><use href="#i-mais"/></svg></summary><p>Não. Reel e carrossel funcionam sem rosto. No React você escolhe: sua foto no canto, um vídeo seu, um avatar de IA (HeyGen, plano seu) ou só a voz.</p></details>
+        <details><summary>Ele posta sozinho mesmo?<svg class="i"><use href="#i-mais"/></svg></summary><p>Sim, pelo seu próprio Chrome, agendando no Meta Business Suite, YouTube Studio e TikTok Studio. Você começa no modo revisão: ele produz e espera o seu "aprova". O computador precisa estar ligado nos horários.</p></details>
+        <details><summary>Como o conteúdo ajuda a vender?<svg class="i"><use href="#i-mais"/></svg></summary><p>Você cadastra a sua oferta, própria ou de afiliado. O sistema distribui os posts no funil (atrair, aquecer, vender), coloca o pedido certo em cada um e cria um link rastreado por rede. O relatório semanal mostra de onde vieram as vendas.</p></details>
+        <details><summary>React não dá problema de direitos autorais?<svg class="i"><use href="#i-mais"/></svg></summary><p>O Auto Viral faz react com comentário seu de verdade, crédito ao criador na tela e na legenda, e evita quem proíbe repost. Mesmo assim, você é responsável pelo que publica: se o criador pedir para remover, remova. E misture com Reels e carrosséis próprios.</p></details>
+        <details><summary>O Instagram pode bloquear a minha conta?<svg class="i"><use href="#i-mais"/></svg></summary><p>O sistema usa o agendador oficial das próprias redes, com você logado, no seu ritmo. Não compra seguidor, não faz spam, não usa robô de curtida. Comece com 1 ou 2 posts por dia.</p></details>
+        <details><summary>Funciona no Windows?<svg class="i"><use href="#i-mais"/></svg></summary><p>Sim, em versão beta. Tudo roda, mas a voz clonada fica mais lenta em computadores sem placa de vídeo. Nesse caso, rode o piloto de madrugada, use a sua voz gravada ou o ElevenLabs.</p></details>
+        <details><summary>Tenho garantia de vendas ou seguidores?<svg class="i"><use href="#i-mais"/></svg></summary><p>Não, e desconfie de quem promete. O Auto Viral entrega conteúdo profissional todo dia, ligado à sua oferta, e mostra o que funcionou para você ajustar.</p></details>
+        <details><summary>Como recebo? E se eu travar?<svg class="i"><use href="#i-mais"/></svg></summary><p>Na hora, por e-mail, com acesso à área de membros da Kiwify: o sistema e o guia em PDF. Travou? O próprio Claude resolve a maioria dos erros, e tem suporte por e-mail.</p></details>
+      </div>
+    </div>
+  </section>
+
+  <section class="fecho">
+    <div class="miolo">
+      <p class="relogio" aria-hidden="true">08:45</p>
+      <h2>Amanhã, quando você acordar, o primeiro vídeo já pode estar no ar.</h2>
+      <div class="acao">
+        <a class="botao comprar" href="#oferta">Quero o Auto Viral <span class="preco">R$ 47</span></a>
+        <div class="letras"><span><svg class="i"><use href="#i-check"/></svg>pagamento único</span><span><svg class="i"><use href="#i-check"/></svg>garantia de 7 dias</span></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="miolo">
+    <p><b>Auto Viral</b> · Dayvth Costa · licença de uso para 1 pessoa · venda e pagamento processados pela Kiwify.</p>
+    <p>Os resultados dependem da execução de cada pessoa; nada nesta página é promessa de seguidores, alcance ou renda. As notificações do topo são uma simulação ilustrativa, e as capas da semana foram geradas pelo sistema para perfis de exemplo. Tempos de produção variam com o computador.</p>
+    <p>Claude e Claude Code são produtos da Anthropic; o Auto Viral não tem vínculo com a empresa. Instagram, Facebook, YouTube, TikTok e Kiwify são marcas de seus donos.</p>
+  </div>
+</footer>
+
+<div class="barra-acao" id="barra"><a class="botao comprar" href="#oferta">Quero o Auto Viral <span class="preco">R$ 47</span></a></div>
+
+<script>
+  // link do checkout da Kiwify (preenchido depois de criar o produto); os botões de compra levam direto para ele
+  const CHECKOUT = "https://pay.kiwify.com.br/OyNVETx";
+  if (CHECKOUT) {
+    const extra = location.search ? (CHECKOUT.includes("?") ? "&" : "?") + location.search.slice(1) : "";
+    document.querySelectorAll("a.comprar").forEach(a => { a.href = CHECKOUT + extra; });
+  }
+
+  // o céu amanhece com a rolagem
+  const paradas = [[0, "#0B1030", "#1A1650"], [.35, "#16154A", "#3A2470"], [.7, "#2E2268", "#7A3C7E"], [1, "#4A3486", "#D2756F"]];
+  const hex = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const mix = (a, b, t) => "#" + hex(a).map((v, i) => Math.round(v + (hex(b)[i] - v) * t).toString(16).padStart(2, "0")).join("");
+  const raiz = document.documentElement.style;
+  function ceu() {
+    const max = document.documentElement.scrollHeight - innerHeight;
+    const p = max > 0 ? Math.min(1, scrollY / max) : 0;
+    let k = 0; while (k < paradas.length - 2 && p > paradas[k + 1][0]) k++;
+    const [p0, a1, a2] = paradas[k], [p1, b1, b2] = paradas[k + 1], t = (p - p0) / (p1 - p0);
+    raiz.setProperty("--ceu-1", mix(a1, b1, t)); raiz.setProperty("--ceu-2", mix(a2, b2, t));
+    raiz.setProperty("--estrelas", (1 - p * 1.4).toFixed(2));
+  }
+
+  // o relógio da noite acompanha os passos
+  const hora = document.getElementById("hora-noite"), passos = [...document.querySelectorAll(".linha li")];
+  const linha = document.querySelector(".linha"), statusHora = document.getElementById("hora-status");
+  function relogio() {
+    let atual = passos[0].dataset.hora;
+    for (const li of passos) if (li.getBoundingClientRect().top < innerHeight * .55) atual = li.dataset.hora;
+    if (hora.textContent !== atual) hora.textContent = atual;
+    // barra de status: 07:41 na tela de bloqueio, a hora da linha do tempo durante a noite, e depois anda até 08:45 no fim da página
+    const lr = linha.getBoundingClientRect(), fimLinha = lr.bottom + scrollY, max = document.documentElement.scrollHeight - innerHeight;
+    let st = "07:41";
+    if (lr.top < innerHeight * .55 && lr.bottom > innerHeight * .55) st = atual;
+    else if (lr.bottom <= innerHeight * .55) {
+      const t = Math.min(1, Math.max(0, (scrollY + innerHeight * .55 - fimLinha) / Math.max(1, max + innerHeight * .55 - fimLinha)));
+      const m = Math.round(458 + (525 - 458) * t);
+      st = String(Math.floor(m / 60)).padStart(2, "0") + ":" + String(m % 60).padStart(2, "0");
+    }
+    if (statusHora.textContent !== st) statusHora.textContent = st;
+  }
+
+  // barra de compra do celular: aparece quando nenhum outro botão de compra está na tela
+  const barra = document.getElementById("barra");
+  const visiveis = new Set();
+  const obs = new IntersectionObserver(es => {
+    es.forEach(e => e.isIntersecting ? visiveis.add(e.target) : visiveis.delete(e.target));
+    barra.classList.toggle("ver", visiveis.size === 0 && scrollY > 200);
+  });
+  document.querySelectorAll("main .acao, #oferta").forEach(el => obs.observe(el));
+  function barraAcao() { barra.classList.toggle("ver", visiveis.size === 0 && scrollY > 200); }
+
+  let pedido = false;
+  addEventListener("scroll", () => { if (!pedido) { pedido = true; requestAnimationFrame(() => { ceu(); relogio(); barraAcao(); pedido = false; }); } }, { passive: true });
+  addEventListener("resize", ceu);
+  ceu(); relogio();
+
+  const demo = document.getElementById("demo");
+  document.getElementById("play").addEventListener("click", () => {
+    demo.controls = true; demo.muted = false; demo.play(); demo.parentElement.classList.add("tocando");
+  });
+
+  const r = document.getElementById("horas");
+  const up = () => { const h = +r.value, ano = h * 52;
+    document.getElementById("hv").textContent = h + " h";
+    document.getElementById("ano").textContent = ano.toLocaleString("pt-BR");
+    document.getElementById("dias").textContent = Math.round(ano / 8); };
+  r.addEventListener("input", up); up();
+</script>
+</body>
+</html>
